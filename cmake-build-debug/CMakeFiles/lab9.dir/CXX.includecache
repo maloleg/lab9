@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/oleg/CLionProjects/lab9/Matrix.hpp
+deque
+-
+fstream
+-
+thread
+-
+
+/home/oleg/CLionProjects/lab9/main.cpp
+iostream
+-
+Matrix.hpp
+/home/oleg/CLionProjects/lab9/Matrix.hpp
+
