@@ -6,17 +6,21 @@
 
 #IncludeRegexTransform: 
 
-/home/oleg/CLionProjects/lab9/Matrix.hpp
-deque
+C:/Users/malol/Documents/GitHub/lab9/Matrix.hpp
+iostream
+-
+vector
 -
 fstream
 -
 thread
 -
-
-/home/oleg/CLionProjects/lab9/main.cpp
-iostream
+future
 -
+algorithm
+-
+
+C:/Users/malol/Documents/GitHub/lab9/main.cpp
 Matrix.hpp
-/home/oleg/CLionProjects/lab9/Matrix.hpp
+C:/Users/malol/Documents/GitHub/lab9/Matrix.hpp
 
