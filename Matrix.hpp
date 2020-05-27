@@ -36,7 +36,7 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
         std::vector<bool> Done;
         uint_fast64_t rows = lhs.rows;
         uint_fast64_t cols = rhs.cols;
-        std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так
+        std::cout << "Number of threads is " << Matrix<T>::GetParallel() << "\n"; //оно обнуляется, почему так
         threads.resize(5);
         temp.Done.resize(rows * cols, false);
         temp.rows_set(rows);
@@ -44,7 +44,7 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
         temp.a_resize(rows * cols);
         Done.resize(rows * cols, false);
 
-        std::cout << Matrix<T>::parallel;
+        //std::cout << Matrix<T>::parallel;
 //        if (Done[Done.size() - 1] == false)
 //            std::cout << "123123123123123123123";
         multiplied_matrix.resize(rows * cols);
@@ -52,25 +52,25 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
 
         while (Done[Done.size() - 1] == false){
 
-            for (const auto& j : Done){
-                std::cout << j << " ";
-            }
-            std::cout << std::endl;
+//            for (const auto& j : Done){
+//                std::cout << j << " ";
+//            }
+//            std::cout << std::endl;
 
 
-            for (size_t i = 0; i < 5; i++){
+            for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
                 uint_fast64_t j = 0;
                 j = 0;
                 while (Done[j] == true){
                     j++;
                 }
-                std::cout << "\nj=" << j << "\n";
+                //std::cout << "\nj=" << j << "\n";
                 Done[j] = true;
                 threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), j);
             }
 
-            std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так... нахуй?(
-            for (size_t i = 0; i < 5; i++){
+            //std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так... нахуй?(
+            for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
                 if (threads[i].joinable())
                     threads[i].join();
             }
@@ -93,7 +93,7 @@ public:
         a.clear();
         rows = 0;
         cols = 0;
-        parallel = 0;
+        //parallel = 0;
     }
 
     uint_fast64_t cols_get(){
