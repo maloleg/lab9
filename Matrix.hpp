@@ -11,16 +11,16 @@ std::mutex m_lock;
 template <typename T>
 class Matrix;
 
-template<typename U>
-void ElementComputation(Matrix<U> lhs, Matrix<U> rhs, Matrix<U> result, uint_fast64_t Element_n) {
-    U temp = 0;
-    for (uint_fast64_t i = 0; i < lhs.cols; i++){
+template<typename T>
+void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, uint_fast64_t Element_n) {
+    T temp = 0;
+    for (uint_fast64_t i = 0; i < lhs.cols_get(); i++){
         //std::cout << (Element_n / rhs.cols) * lhs.cols + i << " " << Element_n % rhs.cols + i*rhs.cols << std::endl;
-        temp += lhs.a[(Element_n / rhs.cols) * lhs.cols + i] * rhs.a[Element_n % rhs.cols + i*rhs.cols];
+        temp += lhs.a_get_elem((Element_n / rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem(Element_n % rhs.cols_get() + i*rhs.cols_get());
     }//ne sure
     m_lock.lock();
-    result.Done[Element_n] = true;
-    result.a[Element_n] = temp;
+    //result.Done[Element_n] = true;
+    result.a_set_elem(Element_n, temp);
     m_lock.unlock();
 }
 
@@ -28,26 +28,51 @@ template <typename T>
 Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
     if (lhs.cols != rhs.rows) throw std::invalid_argument("You cannot multiply these matrices");
     else{
+        Matrix<T>::parallel = 5; // иначе оно обнуляется, почему
+        std::cout << "Number of threads is " << Matrix<T>::parallel << "\n";
         std::vector<T> multiplied_matrix;
         Matrix<T> temp;
         std::vector<std::thread> threads;
         std::vector<bool> Done;
         uint_fast64_t rows = lhs.rows;
         uint_fast64_t cols = rhs.cols;
-        threads.resize(Matrix<T>::parallel);
+        std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так
+        threads.resize(5);
         temp.Done.resize(rows * cols, false);
+        temp.rows_set(rows);
+        temp.cols_set(cols);
+        temp.a_resize(rows * cols);
+        Done.resize(rows * cols, false);
 
-
+        std::cout << Matrix<T>::parallel;
+//        if (Done[Done.size() - 1] == false)
+//            std::cout << "123123123123123123123";
         multiplied_matrix.resize(rows * cols);
-        while (std::find(temp.Done.begin(), temp.Done.end(), false) != temp.Done.end()){
-            for (size_t i = 0; i < Matrix<T>::parallel; i++){
+
+
+        while (Done[Done.size() - 1] == false){
+
+            for (const auto& j : Done){
+                std::cout << j << " ";
+            }
+            std::cout << std::endl;
+
+
+            for (size_t i = 0; i < 5; i++){
                 uint_fast64_t j = 0;
-                while (temp.Done[j] == true){
+                j = 0;
+                while (Done[j] == true){
                     j++;
                 }
-                temp.Done[j] = true;
-                threads[i] = std::thread(ElementComputation, lhs, rhs, temp, j);
-                threads[i].join();
+                std::cout << "\nj=" << j << "\n";
+                Done[j] = true;
+                threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), j);
+            }
+
+            std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так... нахуй?(
+            for (size_t i = 0; i < 5; i++){
+                if (threads[i].joinable())
+                    threads[i].join();
             }
         }
         return temp;
@@ -71,8 +96,36 @@ public:
         parallel = 0;
     }
 
-    friend void Parallels_init();
+    uint_fast64_t cols_get(){
+        return this->cols;
+    }
 
+    uint_fast64_t rows_get(){
+        return this->rows;
+    }
+
+
+    T a_get_elem(uint_fast64_t numb){
+        return a[numb];
+    }
+
+    void a_resize(uint_fast64_t size){
+        a.resize(size);
+    }
+
+    void rows_set(T data){
+        rows = data;
+    }
+
+    void cols_set(T data){
+        cols = data;
+    }
+
+    void a_set_elem(uint_fast64_t numb, T data){
+        a[numb] = data;
+    }
+
+    friend void Parallels_init();
 
     Matrix(std::vector<T> new_m, uint_fast64_t new_rows, uint_fast64_t new_cols){
         a = new_m;
@@ -89,9 +142,6 @@ public:
     void LoadMatrix(std::ifstream& mat);
 
     friend Matrix<T> operator *<T>(const Matrix& lhs, const Matrix& rhs);
-
-    template <typename U>
-    friend void ElementComputation(Matrix<U> lhs, Matrix<U> rhs, Matrix<U> result, uint_fast64_t Element_n);
 };
 
 template <typename T>
@@ -125,7 +175,6 @@ template <typename T>
 void Parallels_init() {
     Matrix<T>::SetParallel(0);
 }
-
 
 
 
