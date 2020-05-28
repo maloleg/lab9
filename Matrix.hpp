@@ -5,11 +5,28 @@
 #include <thread>
 #include <future>
 #include <algorithm>
+#include <cstdlib>
+#include <chrono>
 
 std::mutex m_lock;
 
 template <typename T>
 class Matrix;
+
+template <typename T>
+void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1, size_t thread2){
+    Matrix<T> result;
+    uint_fast64_t time;
+
+    for (size_t i = thread1; i < thread2 + 1; i++){
+        Matrix<T>::SetParallel(i);
+        std::cout << "Testing with " << i << " threads:";
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        result = first * second;
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - time << "ms\n";
+    }
+
+}
 
 template<typename T>
 void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, uint_fast64_t Element_n) {
@@ -28,15 +45,15 @@ template <typename T>
 Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
     if (lhs.cols != rhs.rows) throw std::invalid_argument("You cannot multiply these matrices");
     else{
-        Matrix<T>::parallel = 5; // иначе оно обнуляется, почему
-        std::cout << "Number of threads is " << Matrix<T>::parallel << "\n";
+        //Matrix<T>::parallel = 5; // иначе оно обнуляется, почему
+        //std::cout << "Number of threads is " << Matrix<T>::parallel << "\n";
         std::vector<T> multiplied_matrix;
         Matrix<T> temp;
         std::vector<std::thread> threads;
         std::vector<bool> Done;
         uint_fast64_t rows = lhs.rows;
         uint_fast64_t cols = rhs.cols;
-        std::cout << "Number of threads is " << Matrix<T>::GetParallel() << "\n"; //оно обнуляется, почему так
+        //std::cout << "Number of threads is " << Matrix<T>::GetParallel() << "\n"; //оно обнуляется, почему так
         threads.resize(5);
         temp.Done.resize(rows * cols, false);
         temp.rows_set(rows);
@@ -81,6 +98,25 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
 }
 
 template <typename T>
+std::ostream& operator <<(std::ostream& out, const Matrix<T>& rhs){
+    out << rhs.rows << " " << rhs.cols << std::endl;
+    for (uint_fast64_t j = 0; j < rhs.rows; j++){
+        for (uint_fast64_t i = 0; i < rhs.cols; i++){
+            //std::cout << j * rhs.cols + i;
+            out << rhs.a[j * rhs.cols + i];
+
+            if (i != rhs.cols - 1){
+                out << " ";
+            }
+        }
+        if (j != rhs.rows - 1){
+            out << std::endl;
+        }
+    }
+    return out;
+}
+
+template <typename T>
 class Matrix{
 private:
     uint_fast64_t rows, cols;
@@ -103,7 +139,6 @@ public:
     uint_fast64_t rows_get(){
         return this->rows;
     }
-
 
     T a_get_elem(uint_fast64_t numb){
         return a[numb];
@@ -142,6 +177,23 @@ public:
     void LoadMatrix(std::ifstream& mat);
 
     friend Matrix<T> operator *<T>(const Matrix& lhs, const Matrix& rhs);
+
+    friend std::ostream& operator <<<T>(std::ostream& out, const Matrix& rhs);
+
+    void SaveMatrix(const char* filename);
+
+    void GenerateMatrix(uint_fast64_t _rows, uint_fast64_t _cols){
+        srand(1234);
+        this->a.resize(_rows * _cols);
+        this->rows = _rows;
+        this->cols = _cols;
+        for (uint_fast64_t i = 0; i < rows * cols; i++){
+            //std::cout << rand();
+            this->a[i] = rand();
+        }
+    }
+
+
 };
 
 template <typename T>
@@ -169,11 +221,34 @@ void Matrix<T>::LoadMatrix(const char * filename) {
 }
 
 template<typename T>
-void Matrix<T>::SetParallel(size_t num) {parallel = num;}
+void Matrix<T>::SetParallel(size_t num) {
+    parallel = num;
+}
 
 template <typename T>
 void Parallels_init() {
     Matrix<T>::SetParallel(0);
+}
+
+template<typename T>
+void Matrix<T>::SaveMatrix(const char *filename) {
+    std::ofstream out;
+    out.open(filename);
+    out << this->rows << " " << this->cols << std::endl;
+    for (uint_fast64_t j = 0; j < this->rows; j++){
+        for (uint_fast64_t i = 0; i < this->cols; i++){
+            out << this->a[j * this->cols + i];
+            if (i != this->cols - 1){
+                out << " ";
+            }
+        }
+        if (j != this->rows - 1){
+            out << std::endl;
+        }
+    }
+
+    out.close();
+
 }
 
 
