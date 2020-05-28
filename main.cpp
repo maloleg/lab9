@@ -36,7 +36,7 @@ int main() {
 //    m4 = m4 * m5;
 //    m4.SaveMatrix("Out_Big.txt");
 
-    Time_testing(m4, m5, 1, 20);
+    Time_testing(m4, m5, 1, 100);
 
 
 

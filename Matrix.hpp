@@ -17,15 +17,31 @@ template <typename T>
 void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1, size_t thread2){
     Matrix<T> result;
     uint_fast64_t time;
+    std::ofstream Graph_points;
+    Graph_points.open("Graph_points.txt");
 
     for (size_t i = thread1; i < thread2 + 1; i++){
-        result;
         Matrix<T>::SetParallel(i);
         std::cout << "Testing with " << i << " threads:";
         time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         result = first * second;
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - time << "ms\n";
+        Graph_points << i << ";" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - time << std::endl;
     }
+    Graph_points.close();
+
+}
+
+template <typename T>
+void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1){
+    Matrix<T> result;
+    uint_fast64_t time;
+
+    Matrix<T>::SetParallel(thread1);
+    std::cout << "Testing with " << thread1 << " threads:";
+    time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    result = first * second;
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - time << "ms\n";
 
 }
 
@@ -36,10 +52,10 @@ void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, uint_fa
         //std::cout << (Element_n / rhs.cols) * lhs.cols + i << " " << Element_n % rhs.cols + i*rhs.cols << std::endl;
         temp += lhs.a_get_elem((Element_n / rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem(Element_n % rhs.cols_get() + i*rhs.cols_get());
     }//ne sure
-    m_lock.lock();
+    //m_lock.lock();
     //result.Done[Element_n] = true;
     result.a_set_elem(Element_n, temp);
-    m_lock.unlock();
+    //m_lock.unlock();
 }
 
 template <typename T>
@@ -79,9 +95,11 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
                     j++;
                 }
                 //std::cout << "\nj=" << j << "\n";
-                Done[j] = true;
-                threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), j);
-            }
+                if (j < rows* cols) {
+                    Done[j] = true;
+                    threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), j);
+                }
+                }
 
             //std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так... нахуй?(
             for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
