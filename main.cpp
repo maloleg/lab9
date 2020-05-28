@@ -37,10 +37,13 @@ int main() {
 
     m4.GenerateMatrix(100, 200);
     m5.GenerateMatrix(200, 500);
-    //m4 = m4 * m5;
-    //m4.SaveMatrix("Out_Big.txt");
+    //Matrix<double>::SetParallel(1);
+    //m3 = m4 * m5;
+    //m3.SaveMatrix("Out_Big.txt");
+    //m4.SaveMatrix("Out_Big2.txt");
+    //m5.SaveMatrix("Out_Big3.txt");
 
-    Time_testing(m4, m5, 1, 100);
+    Time_testing(m4, m5, 1, 15);
 
 
 

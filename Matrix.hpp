@@ -46,35 +46,40 @@ void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1){
 }
 
 template<typename T>
-void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, std::vector<bool>& Done, size_t threadN) {
+void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, std::vector<bool>& Done, size_t threadN, uint_fast64_t& LastComputed) {
     T temp = 0;
     uint_fast64_t Elements_count = 0;
-//    m_lock.lock();
-//    std::cout << "!@#  " << threadN << "\n";
-//    m_lock.unlock();
-    while (Done[Done.size() - 1] == false){
+    uint_fast64_t size = Done.size();
+
+
+    while (LastComputed < size){
         temp = 0;
 
         uint_fast64_t element;
         m_lock.lock();
-        for (uint_fast64_t i = 0; i < Done.size(); i++){
-            //std::cout << i << std::endl;
-            if (Done[i] == false){
-                element = i;
-                Done[i] = true;
-                break;
-            }
-        }
+        //LastComputed++;
+        //Done[b] = true;
+//        for (uint_fast64_t i = 0; i < size; i++){
+//            if (Done[i] == false){
+//                element = i;
+//                Done[i] = true;
+//                break;
+//            }
+//        }
         m_lock.unlock();
+        //std::cout << b;
+        //b++;
+        //std::cout << LastComputed << std::endl;
         for (uint_fast64_t i = 0; i < lhs.cols_get(); i++){
-            //std::cout << (element / rhs.cols_get()) * lhs.cols_get() + i << " " << element % rhs.cols_get() + i*rhs.cols_get() << std::endl;
-            temp += lhs.a_get_elem(((element)/ rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem((element) % rhs.cols_get() + i*rhs.cols_get());
+
+            temp += lhs.a_get_elem(((LastComputed)/ rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem((LastComputed) % rhs.cols_get() + i*rhs.cols_get());
+            //temp += lhs.a_get_elem(((element)/ rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem((element) % rhs.cols_get() + i*rhs.cols_get());
         }
         m_lock.lock();
-        //std::cout << "elem =" << (element) << " data =" << temp << " Done =" << element << " Size =" << result.rows_get() * result.cols_get() << std::endl;
+        LastComputed++;
         m_lock.unlock();
 
-        result.a_set_elem((element), temp);
+        result.a_set_elem((LastComputed - 1), temp);
         Elements_count++;
     }
     m_lock.lock();
@@ -94,10 +99,12 @@ Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
         temp.cols_set(rhs.cols);
         temp.a_resize(lhs.rows * rhs.cols);
         std::vector<bool> Done;
+        uint_fast64_t LastComputed = 0;
         Done.resize(lhs.rows * rhs.cols, false);
 
         for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
-            threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), std::ref(Done), i);
+            //std::cout << LastComputed << std::endl;
+            threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), std::ref(Done), i, std::ref(LastComputed));
         }
 
             for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
