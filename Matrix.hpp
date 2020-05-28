@@ -19,6 +19,7 @@ void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1, size_t thre
     uint_fast64_t time;
 
     for (size_t i = thread1; i < thread2 + 1; i++){
+        result;
         Matrix<T>::SetParallel(i);
         std::cout << "Testing with " << i << " threads:";
         time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -45,17 +46,13 @@ template <typename T>
 Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
     if (lhs.cols != rhs.rows) throw std::invalid_argument("You cannot multiply these matrices");
     else{
-        //Matrix<T>::parallel = 5; // иначе оно обнуляется, почему
-        //std::cout << "Number of threads is " << Matrix<T>::parallel << "\n";
         std::vector<T> multiplied_matrix;
         Matrix<T> temp;
         std::vector<std::thread> threads;
         std::vector<bool> Done;
         uint_fast64_t rows = lhs.rows;
         uint_fast64_t cols = rhs.cols;
-        //std::cout << "Number of threads is " << Matrix<T>::GetParallel() << "\n"; //оно обнуляется, почему так
-        threads.resize(5);
-        temp.Done.resize(rows * cols, false);
+        threads.resize(Matrix<T>::GetParallel());
         temp.rows_set(rows);
         temp.cols_set(cols);
         temp.a_resize(rows * cols);
