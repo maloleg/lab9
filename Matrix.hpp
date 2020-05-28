@@ -46,67 +46,65 @@ void Time_testing(Matrix<T> first, Matrix<T> second, size_t thread1){
 }
 
 template<typename T>
-void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, uint_fast64_t Element_n) {
+void ElementComputation(Matrix<T> lhs, Matrix<T> rhs, Matrix<T>& result, std::vector<bool>& Done, size_t threadN) {
     T temp = 0;
-    for (uint_fast64_t i = 0; i < lhs.cols_get(); i++){
-        //std::cout << (Element_n / rhs.cols) * lhs.cols + i << " " << Element_n % rhs.cols + i*rhs.cols << std::endl;
-        temp += lhs.a_get_elem((Element_n / rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem(Element_n % rhs.cols_get() + i*rhs.cols_get());
-    }//ne sure
-    //m_lock.lock();
-    //result.Done[Element_n] = true;
-    result.a_set_elem(Element_n, temp);
-    //m_lock.unlock();
+    uint_fast64_t Elements_count = 0;
+//    m_lock.lock();
+//    std::cout << "!@#  " << threadN << "\n";
+//    m_lock.unlock();
+    while (Done[Done.size() - 1] == false){
+        temp = 0;
+
+        uint_fast64_t element;
+        m_lock.lock();
+        for (uint_fast64_t i = 0; i < Done.size(); i++){
+            //std::cout << i << std::endl;
+            if (Done[i] == false){
+                element = i;
+                Done[i] = true;
+                break;
+            }
+        }
+        m_lock.unlock();
+        for (uint_fast64_t i = 0; i < lhs.cols_get(); i++){
+            //std::cout << (element / rhs.cols_get()) * lhs.cols_get() + i << " " << element % rhs.cols_get() + i*rhs.cols_get() << std::endl;
+            temp += lhs.a_get_elem(((element)/ rhs.cols_get()) * lhs.cols_get() + i) * rhs.a_get_elem((element) % rhs.cols_get() + i*rhs.cols_get());
+        }
+        m_lock.lock();
+        //std::cout << "elem =" << (element) << " data =" << temp << " Done =" << element << " Size =" << result.rows_get() * result.cols_get() << std::endl;
+        m_lock.unlock();
+
+        result.a_set_elem((element), temp);
+        Elements_count++;
+    }
+    m_lock.lock();
+    std::cout << "Thread #" << threadN + 1 << " ended his job. " << Elements_count << " elements was computed\n";
+    m_lock.unlock();
 }
+
 
 template <typename T>
 Matrix<T> operator* (const Matrix<T>& lhs, const Matrix<T>& rhs){
     if (lhs.cols != rhs.rows) throw std::invalid_argument("You cannot multiply these matrices");
     else{
-        std::vector<T> multiplied_matrix;
         Matrix<T> temp;
         std::vector<std::thread> threads;
-        std::vector<bool> Done;
-        uint_fast64_t rows = lhs.rows;
-        uint_fast64_t cols = rhs.cols;
         threads.resize(Matrix<T>::GetParallel());
-        temp.rows_set(rows);
-        temp.cols_set(cols);
-        temp.a_resize(rows * cols);
-        Done.resize(rows * cols, false);
+        temp.rows_set(lhs.rows);
+        temp.cols_set(rhs.cols);
+        temp.a_resize(lhs.rows * rhs.cols);
+        std::vector<bool> Done;
+        Done.resize(lhs.rows * rhs.cols, false);
 
-        //std::cout << Matrix<T>::parallel;
-//        if (Done[Done.size() - 1] == false)
-//            std::cout << "123123123123123123123";
-        multiplied_matrix.resize(rows * cols);
+        for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
+            threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), std::ref(Done), i);
+        }
 
-
-        while (Done[Done.size() - 1] == false){
-
-//            for (const auto& j : Done){
-//                std::cout << j << " ";
-//            }
-//            std::cout << std::endl;
-
-
-            for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
-                uint_fast64_t j = 0;
-                j = 0;
-                while (Done[j] == true){
-                    j++;
-                }
-                //std::cout << "\nj=" << j << "\n";
-                if (j < rows* cols) {
-                    Done[j] = true;
-                    threads[i] = std::thread(ElementComputation<T>, lhs, rhs, std::ref(temp), j);
-                }
-                }
-
-            //std::cout << "Number of threads is " << Matrix<T>::parallel << "\n"; //оно обнуляется, почему так... нахуй?(
             for (size_t i = 0; i < Matrix<T>::GetParallel(); i++){
                 if (threads[i].joinable())
                     threads[i].join();
+                //threads[i].detach();
             }
-        }
         return temp;
     }
 
@@ -156,7 +154,8 @@ public:
     }
 
     T a_get_elem(uint_fast64_t numb){
-        return a[numb];
+        if (numb < a.size()) return a[numb];
+        else return -1;
     }
 
     void a_resize(uint_fast64_t size){
@@ -172,7 +171,7 @@ public:
     }
 
     void a_set_elem(uint_fast64_t numb, T data){
-        a[numb] = data;
+        if (numb < a.size()) a[numb] = data;
     }
 
     friend void Parallels_init();
@@ -204,7 +203,7 @@ public:
         this->cols = _cols;
         for (uint_fast64_t i = 0; i < rows * cols; i++){
             //std::cout << rand();
-            this->a[i] = rand();
+            this->a[i] = rand()%1000;
         }
     }
 
